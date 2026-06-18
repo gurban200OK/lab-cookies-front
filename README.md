@@ -165,7 +165,3 @@ Send a screen capture on slack if you do, so we can all enjoy it and **vote for 
 - [httpOnly cookies](https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#restrict_access_to_cookies)
 - [CORS with credentials](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS#requests_with_credentials)
 
-## Delivering the lab
-
-Work in groups of two or three. Everyone opens a PR on their own fork and shares
-the link in the students portal.
