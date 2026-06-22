@@ -1,4 +1,5 @@
 import Button from "./components/Button";
+import Navbar from "./components/Navbar";
 
 // ── Placeholder content (static — no fetching) ─────────────────────────
 const projects = [
@@ -98,18 +99,10 @@ function TagChip({ children }) {
 export default function Home() {
   return (
     <div className="flex flex-col flex-1 text-foreground">
-      {/* ── Top nav ─────────────────────────────────────────────── */}
-      <header className="flex items-center justify-between px-6 sm:px-10 py-5 border-b border-panel-border">
-        <span className="glitch neon-text text-primary text-xl font-bold tracking-[0.3em]">
-          DEVFORGE
-        </span>
-        <Button href="/auth" variant="outline" size="sm">
-          &gt; access_terminal
-        </Button>
-      </header>
+      <Navbar />
 
       {/* ── Hero ────────────────────────────────────────────────── */}
-      <section className="scanlines px-6 sm:px-10 py-20 sm:py-28 text-center border-b border-panel-border">
+      <section className="scanlines px-6 sm:px-10 py-20 sm:py-28 text-center border-b border-panel-border hero-section">
         <p className="text-secondary text-xs uppercase tracking-[0.4em] mb-4">
           {"// dev grid online"}
         </p>
@@ -136,7 +129,7 @@ export default function Home() {
           {projects.map((p) => (
             <article
               key={p.name}
-              className="bg-panel border border-panel-border rounded-md p-5 hover:border-primary transition-colors group"
+              className="repo-card bg-panel border border-panel-border rounded-lg p-5 hover:border-primary hover:shadow-[0_0_20px_rgba(0,240,255,0.08)] transition-all group"
             >
               <h3 className="text-primary font-bold">
                 {p.name}

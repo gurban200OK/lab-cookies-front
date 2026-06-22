@@ -7,7 +7,8 @@ export const metadata = {
 
 export default function AuthPage() {
   return (
-    <div className="flex flex-1 items-center justify-center px-4 py-16">
+    <div className="auth-page flex flex-1 items-center justify-center px-4 py-16 sm:py-24 relative overflow-hidden">
+      <div className="auth-page-glow pointer-events-none" aria-hidden="true" />
       <AuthForm />
     </div>
   );

@@ -4,10 +4,13 @@ import { useState, useRef } from "react";
 import Link from "next/link";
 import Field from "./Field";
 import Button from "../components/Button";
+import { useAuth } from "../context/AuthContext";
 
 export default function AuthForm() {
+  const { login, signup } = useAuth();
   const [mode, setMode] = useState("login");
   const [errors, setErrors] = useState({ confirm: "", form: "" });
+  const [submitting, setSubmitting] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -16,86 +19,22 @@ export default function AuthForm() {
 
   const isLogin = mode === "login";
 
-  async function sendLoginRequest() {
-    const formData = {
-      email,
-      password,
-    };
-
-    try {
-      const response = await fetch("http://localhost:5000/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (!response.ok) {
-        const jsonResponse = await response.json();
-        console.log("RESPONSE.MESSAGE:", jsonResponse.message);
-
-        throw new Error(jsonResponse.message);
-      }
-
-      const data = await response.json();
-      console.log("Logged in:", data);
-      // I need data.token
-      localStorage.setItem("token", data.token);
-
-      setErrors((prev) => ({ ...prev, form: "" }));
-    } catch (err) {
-      console.error("Error:", err.message);
-      setErrors((prev) => ({ ...prev, form: err.message }));
-    }
-  }
-
   async function handleLogin(e) {
     e.preventDefault();
-    // TODO: store the auth token, then redirect to "/".
-
-    sendLoginRequest();
-
-    // The values you need are already in state:
-    console.log("login submit", { email, password });
-  }
-
-  async function sendSignupRequest() {
-    const formData = {
-      name,
-      email,
-      password,
-    };
+    setSubmitting(true);
+    setErrors((prev) => ({ ...prev, form: "" }));
 
     try {
-      const response = await fetch("http://localhost:5000/auth/signup", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (!response.ok) {
-        const jsonResponse = await response.json();
-        console.log("RESPONSE.MESSAGE:", jsonResponse.message);
-
-        throw new Error(jsonResponse.message);
-      }
-
-      const data = await response.json();
-      console.log("Signed up:", data);
-      setErrors((prev) => ({ ...prev, form: "" }));
+      await login(email, password);
     } catch (err) {
-      console.error("Error:", err.message);
       setErrors((prev) => ({ ...prev, form: err.message }));
+    } finally {
+      setSubmitting(false);
     }
   }
 
   async function handleSignup(e) {
     e.preventDefault();
-    // TODO: validate the fields (e.g. password === confirm),
-    // call your signup API, then log the user in / redirect to "/".
 
     if (password !== confirm) {
       setErrors((prev) => ({ ...prev, confirm: "Passwords do not match" }));
@@ -103,118 +42,157 @@ export default function AuthForm() {
       return;
     }
 
-    setErrors((prev) => ({ ...prev, confirm: "" }));
+    setSubmitting(true);
+    setErrors({ confirm: "", form: "" });
 
-    // make the post request
-    sendSignupRequest();
+    try {
+      await signup(name, email, password);
+    } catch (err) {
+      setErrors((prev) => ({ ...prev, form: err.message }));
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
-    // The values you need are already in state:
-    console.log("signup submit", { name, email, password, confirm });
+  function switchMode(nextMode) {
+    setMode(nextMode);
+    setErrors({ confirm: "", form: "" });
   }
 
   return (
-    <div className="w-full max-w-md neon-border bg-panel rounded-lg p-8">
-      <Link
-        href="/"
-        className="block text-center text-primary neon-text font-bold tracking-[0.3em] mb-1 cursor-pointer"
-      >
-        DEVFORGE
-      </Link>
+    <div className="auth-card w-full max-w-md">
+      <div className="auth-card-inner neon-border bg-panel rounded-xl p-8 sm:p-10">
+        <Link
+          href="/"
+          className="block text-center text-primary neon-text font-bold tracking-[0.3em] mb-1 cursor-pointer hover:text-primary-strong transition-colors"
+        >
+          DEVFORGE
+        </Link>
 
-      <p className="text-center text-xs text-muted tracking-widest mb-8">
-        {"// access_terminal"}
-      </p>
+        <p className="text-center text-xs text-muted tracking-widest mb-6">
+          {"// access_terminal"}
+        </p>
 
-      <form
-        onSubmit={isLogin ? handleLogin : handleSignup}
-        className="flex flex-col gap-4"
-      >
-        {!isLogin && (
+        <div
+          className="auth-mode-toggle grid grid-cols-2 gap-1 p-1 mb-8 rounded-md bg-background/60 border border-panel-border"
+          role="tablist"
+          aria-label="Authentication mode"
+        >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={isLogin}
+            onClick={() => switchMode("login")}
+            className={`auth-mode-btn rounded-sm py-2 text-[10px] uppercase tracking-[0.25em] cursor-pointer transition-all ${
+              isLogin
+                ? "bg-primary/15 text-primary border border-primary/40 shadow-[0_0_12px_rgba(0,240,255,0.2)]"
+                : "text-muted hover:text-foreground border border-transparent"
+            }`}
+          >
+            Log in
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={!isLogin}
+            onClick={() => switchMode("signup")}
+            className={`auth-mode-btn rounded-sm py-2 text-[10px] uppercase tracking-[0.25em] cursor-pointer transition-all ${
+              !isLogin
+                ? "bg-secondary/15 text-secondary border border-secondary/40 shadow-[0_0_12px_rgba(255,43,214,0.2)]"
+                : "text-muted hover:text-foreground border border-transparent"
+            }`}
+          >
+            Register
+          </button>
+        </div>
+
+        <form
+          onSubmit={isLogin ? handleLogin : handleSignup}
+          className="flex flex-col gap-5"
+        >
+          {!isLogin && (
+            <Field
+              id="name"
+              label="handle"
+              type="text"
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value);
+                setErrors((prev) => ({ ...prev, confirm: "" }));
+              }}
+              placeholder="n3on_rider"
+            />
+          )}
+
           <Field
-            id="name"
-            label="name"
-            type="text"
-            value={name}
-            onChange={(e) => {
-              setName(e.target.value);
-              setErrors((prev) => ({ ...prev, confirm: "" }));
-            }}
-            placeholder="n3on_rider"
+            id="email"
+            label="email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@grid.net"
           />
-        )}
 
-        <Field
-          label="email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@grid.net"
-        />
-
-        <Field
-          id="password"
-          label="password"
-          type="password"
-          value={password}
-          onChange={(e) => {
-            setPassword(e.target.value);
-            setErrors((prev) => ({ ...prev, confirm: "" }));
-          }}
-          placeholder="••••••••"
-        />
-
-        {!isLogin && (
           <Field
-            id="confirm-password"
-            label="confirm password"
+            id="password"
+            label="password"
             type="password"
-            value={confirm}
-            inputRef={confirmRef}
+            value={password}
             onChange={(e) => {
-              setConfirm(e.target.value);
+              setPassword(e.target.value);
               setErrors((prev) => ({ ...prev, confirm: "" }));
             }}
-            error={errors.confirm}
             placeholder="••••••••"
           />
-        )}
 
-        {errors.form && (
-          <p
-            role="alert"
-            aria-live="polite"
-            className="text-xs text-red-400 tracking-widest"
+          {!isLogin && (
+            <Field
+              id="confirm-password"
+              label="confirm password"
+              type="password"
+              value={confirm}
+              inputRef={confirmRef}
+              onChange={(e) => {
+                setConfirm(e.target.value);
+                setErrors((prev) => ({ ...prev, confirm: "" }));
+              }}
+              error={errors.confirm}
+              placeholder="••••••••"
+            />
+          )}
+
+          {errors.form && (
+            <p
+              role="alert"
+              aria-live="polite"
+              className="auth-error text-xs text-red-400 tracking-widest px-3 py-2 rounded-sm border border-red-500/30 bg-red-500/5"
+            >
+              {"// "}
+              {errors.form}
+            </p>
+          )}
+
+          <Button
+            type="submit"
+            variant={isLogin ? "primary" : "secondary"}
+            className="mt-1 w-full"
+            disabled={submitting}
           >
-            {"// "}
-            {errors.form}
-          </p>
-        )}
+            {submitting
+              ? "// syncing..."
+              : isLogin
+                ? "Jack in"
+                : "Create account"}
+          </Button>
+        </form>
 
-        <Button type="submit" variant="primary" className="mt-2 w-full">
-          {isLogin ? "Log in" : "Register"}
-        </Button>
-      </form>
-
-      <p className="text-center text-xs text-muted mt-6">
-        {isLogin ? "No account yet? " : "Already wired in? "}
-        <button
-          type="button"
-          onClick={() => {
-            setMode(isLogin ? "signup" : "login");
-            setErrors({ confirm: "" });
-          }}
-          className="text-primary hover:text-primary-strong underline underline-offset-4 cursor-pointer"
+        <Link
+          href="/"
+          className="block text-center text-xs text-muted hover:text-primary mt-8 cursor-pointer transition-colors"
         >
-          {isLogin ? "Register" : "Log in"}
-        </button>
-      </p>
-
-      <Link
-        href="/"
-        className="block text-center text-xs text-muted hover:text-primary mt-4 cursor-pointer"
-      >
-        ← back to home
-      </Link>
+          ← back to home
+        </Link>
+      </div>
     </div>
   );
 }
